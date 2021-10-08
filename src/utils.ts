@@ -16,6 +16,13 @@ export async function fetchMempool(): Promise<string[]> {
 	return response.json();
 }
 
+/** Returns the latest block mined onto the permaweb */
+export async function getLatestBlock(): Promise<number> {
+	const response = await fetch('https://arweave.net/');
+	const json: { blocks: number } = await response.json();
+	return json.blocks - 1;
+}
+
 export function urlEncodeHashKey(keyBuffer: Buffer): string {
 	return keyBuffer.toString('base64').replace('=', '');
 }

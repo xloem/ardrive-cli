@@ -13,6 +13,7 @@ import {
 	EntityType,
 	GQLEdgeInterface,
 	GQLTagInterface,
+	GQLTransactionsResultInterface,
 	uploadDataChunk
 } from 'ardrive-core-js';
 import {
@@ -55,7 +56,8 @@ import {
 	DataContentType,
 	EntityID,
 	UnixTime,
-	ByteCount
+	ByteCount,
+	BlockStats
 } from './types';
 import { CreateTransactionInterface } from 'arweave/node/common';
 import { ArFSPrivateDriveBuilder, ArFSPublicDriveBuilder } from './utils/arfs_builders/arfs_drive_builders';
@@ -63,6 +65,7 @@ import { ArFSPrivateFileBuilder, ArFSPublicFileBuilder } from './utils/arfs_buil
 import { ArFSPrivateFolderBuilder, ArFSPublicFolderBuilder } from './utils/arfs_builders/arfs_folder_builders';
 import { latestRevisionFilter } from './utils/filter_methods';
 import { FolderHierarchy } from './folderHierarchy';
+import { getLatestBlock } from './utils';
 
 export const graphQLURL = 'https://arweave.net/graphql';
 export interface ArFSCreateDriveResult {
@@ -330,6 +333,57 @@ export class ArFSDAOAnonymous extends ArFSDAOType {
 
 		const entitiesWithPath = children.map((entity) => new ArFSPublicFileOrFolderWithPaths(entity, hierarchy));
 		return entitiesWithPath;
+	}
+
+	async getStatsOfBlock(block?: number, numberOfBlocks?: number): Promise<BlockStats> {
+		let totalTransactions = 0;
+		let totalRewards = 0;
+		let maxReward = 0;
+		let minReward = Number.MAX_SAFE_INTEGER;
+
+		let blocksToCheck = numberOfBlocks ?? 1;
+		let currentBlock = block ?? (await getLatestBlock());
+
+		while (blocksToCheck > 0) {
+			let cursor = '';
+			let hasNextPage = true;
+			while (hasNextPage) {
+				const gqlQuery = buildQuery(undefined, cursor, undefined, currentBlock);
+				const response = await this.arweave.api.post(graphQLURL, gqlQuery);
+
+				const transactions: GQLTransactionsResultInterface = response.data.data.transactions;
+
+				hasNextPage = transactions.pageInfo.hasNextPage;
+
+				for (const edge of transactions.edges) {
+					cursor = edge.cursor;
+
+					// Winston reward casted to a number
+					const reward = +edge.node.fee.winston;
+
+					if (reward > 0) {
+						// Don't calculate rewards of 0 (transactions that were bundled?)
+						maxReward = Math.max(reward, maxReward);
+						minReward = Math.min(reward, minReward);
+						totalRewards += reward;
+						totalTransactions++;
+					}
+				}
+			}
+
+			currentBlock--;
+			blocksToCheck--;
+		}
+
+		const averageReward = totalRewards / totalTransactions;
+
+		return {
+			averageReward,
+			minReward,
+			maxReward,
+			totalTransactions,
+			numberOfBlocks: numberOfBlocks ?? 1
+		};
 	}
 }
 

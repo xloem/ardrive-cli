@@ -1,8 +1,9 @@
 import { ArweaveAddress } from './types';
 
-const nodeFragment = `
+const nodeFragment = (block: boolean) => `
 	node {
 		id
+		${block ? feeInfoFragment : ''}
 		tags {
 			name
 			value
@@ -10,16 +11,22 @@ const nodeFragment = `
 	}
 `;
 
-const edgesFragment = (singleResult: boolean) => `
+const edgesFragment = (singleResult: boolean, block: boolean) => `
 	edges {
 		${singleResult ? '' : 'cursor'}
-		${nodeFragment}
+		${nodeFragment(block)}
 	}
 `;
 
 const pageInfoFragment = `
 	pageInfo {
 		hasNextPage
+	}
+`;
+
+const feeInfoFragment = `
+	fee {
+		winston
 	}
 `;
 
@@ -37,13 +44,14 @@ const pageLimit = 100;
  * const query = buildQuery([{ name: 'Folder-Id', value: folderId }]);
  */
 export function buildQuery(
-	tags: { name: string; value: string | string[] }[],
+	tags?: { name: string; value: string | string[] }[],
 	cursor?: string,
-	owner?: ArweaveAddress
+	owner?: ArweaveAddress,
+	block?: number
 ): GQLQuery {
 	let queryTags = ``;
 
-	tags.forEach((t) => {
+	tags?.forEach((t) => {
 		queryTags = `${queryTags}
 				{ name: "${t.name}", values: ${Array.isArray(t.value) ? JSON.stringify(t.value) : `"${t.value}"`} }`;
 	});
@@ -55,13 +63,18 @@ export function buildQuery(
 			transactions(
 				first: ${singleResult ? latestResult : pageLimit}
 				${singleResult ? '' : `after: "${cursor}"`}
+				${block ? `block: {  min: ${block}, max: ${block} }` : ''}
 				${owner === undefined ? '' : `owners: ["${owner}"]`}
-				tags: [
+				${
+					tags
+						? `tags: [
 					${queryTags}
-				]
+				]`
+						: ''
+				}
 			) {
 				${singleResult ? '' : pageInfoFragment}
-				${edgesFragment(singleResult)}
+				${edgesFragment(singleResult, block !== undefined)}
 			}
 		}`
 	};

@@ -23,6 +23,8 @@ export const AllParameter = 'all';
 export const MaxDepthParameter = 'maxDepth';
 export const BoostParameter = 'boost';
 export const DryRunParameter = 'dryRun';
+export const BlockParameter = 'block';
+export const NumberOfBlocksParameter = 'numberOfBlocks';
 
 // Aggregates for convenience
 export const DriveCreationPrivacyParameters = [DrivePasswordParameter, WalletFileParameter, SeedPhraseParameter];
@@ -199,4 +201,16 @@ Parameter.declare({
 	name: MaxDepthParameter,
 	aliases: ['--max-depth'],
 	description: `(OPTIONAL) enter a number of the amount of sub folder levels to list`
+});
+
+Parameter.declare({
+	name: BlockParameter,
+	aliases: ['-b', '--block'],
+	description: `(OPTIONAL) the block to start from when calculating stats`
+});
+
+Parameter.declare({
+	name: NumberOfBlocksParameter,
+	aliases: ['-n', '--number-of-blocks'],
+	description: `(OPTIONAL) the number of blocks in descending order to calculate stats from`
 });

@@ -40,3 +40,11 @@ export type RewardSettings = {
 	reward?: Winston;
 	feeMultiple?: FeeMultiple;
 };
+
+export interface BlockStats {
+	numberOfBlocks: number;
+	totalTransactions: number;
+	averageReward: number;
+	maxReward: number;
+	minReward: number; // ignore rewards of 0
+}

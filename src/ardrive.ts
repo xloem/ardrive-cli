@@ -24,7 +24,8 @@ import {
 	DriveKey,
 	EntityID,
 	FileID,
-	ByteCount
+	ByteCount,
+	BlockStats
 } from './types';
 import { WalletDAO, Wallet, JWKWallet } from './wallet_new';
 import { ARDataPriceRegressionEstimator } from './utils/ar_data_price_regression_estimator';
@@ -152,6 +153,10 @@ export class ArDriveAnonymous extends ArDriveType {
 	): Promise<ArFSPublicFileOrFolderWithPaths[]> {
 		const children = await this.arFsDao.listPublicFolder(folderId, maxDepth, includeRoot);
 		return children;
+	}
+
+	async getStatsOfBlock(block?: number, numberOfBlocks?: number): Promise<BlockStats> {
+		return this.arFsDao.getStatsOfBlock(block, numberOfBlocks);
 	}
 }
 
